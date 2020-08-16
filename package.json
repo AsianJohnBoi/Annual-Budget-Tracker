@@ -1,5 +1,5 @@
 {
-  "name": "up-budget",
+  "name": "annual-budget-tracker",
   "version": "1.0.0",
   "description": "",
   "main": "app.js",
@@ -10,6 +10,7 @@
   "author": "John Santias",
   "license": "ISC",
   "dependencies": {
+    "axios": "^0.19.2",
     "nodemon": "^2.0.4"
   }
 }
