@@ -8,9 +8,9 @@ const axios = require('axios');
         until - date-time string formatted according to rfc-3339
 
     returns:
-        Array of objects containing transactions
+        An object containing transactional data and any links to pages 
 */
-async function transactions(since, until) {
+async function getTransactions(since, until) {
     return new Promise((resolve, reject) => {
         axios({
             method: 'get',
@@ -24,7 +24,34 @@ async function transactions(since, until) {
             }
         })
         .then(function(response) {
-            resolve(response)
+            resolve(response.data)
+        })
+        .catch(function(error) {
+            reject(error);
+        })
+    });
+}
+
+/*
+    Get all transactions from a page link
+
+    params:
+        link - URL to a page of transactions
+
+    returns:
+        An object containing transactional data and any links to pages 
+*/
+async function nextPageTransactions(link) {
+    return new Promise((resolve, reject) => {
+        axios({
+            method: 'get',
+            url: link,
+            headers: { 
+                Authorization: `Bearer ${process.env.UP_TOKEN}` 
+            }
+        })
+        .then(function(response) {
+            resolve(response.data)
         })
         .catch(function(error) {
             reject(error);
@@ -33,5 +60,6 @@ async function transactions(since, until) {
 }
 
 module.exports = {
-    transactions
+    getTransactions,
+    nextPageTransactions
 }
