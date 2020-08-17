@@ -59,7 +59,37 @@ async function nextPageTransactions(link) {
     });
 }
 
+/*
+    Get all transactional data between specified date-times
+
+    params:
+        since - date-time string formatted according to rfc-3339
+        until - date-time string formatted according to rfc-3339
+
+    returns:
+        An array containing transactional data between specified date-times
+*/
+async function getAllTransactionalData(since, until) {
+    var data = [];
+
+    // Get transactions
+    const ts = await getTransactions(since, until);
+    data = [...data, ...ts.data];
+    var link = ts.links.next !== null ? ts.links.next : null;
+    
+    // scrape transactional data from other pages
+    while (link !== null) {
+        var npt = await nextPageTransactions(link);
+        data = [...data, ...npt.data];
+        link = npt.links.next !== null ? npt.links.next : null
+    }
+
+    return data;
+}
+
+
 module.exports = {
     getTransactions,
-    nextPageTransactions
+    nextPageTransactions,
+    getAllTransactionalData
 }
