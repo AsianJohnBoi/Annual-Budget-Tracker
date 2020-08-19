@@ -105,3 +105,6 @@ dist
 
 # Debugger
 .vscode/
+
+# credentials
+credentials/
