@@ -1,6 +1,7 @@
 const fs = require('fs');
 const readline = require('readline');
 const { google } = require('googleapis');
+const path = require('path');
 
 // If modifying these scopes, delete token.json.
 const SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly'];
@@ -8,16 +9,17 @@ const SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly'];
 // created automatically when the authorization flow completes for the first
 // time.
 const TOKEN_PATH = '../credentials/token.json';
-const GOOGLE_CREDS = '../credentials/credentials.json'
+const GOOGLE_CREDS = '../credentials/credentials.json';
 
 /**
  * Access the google spreadsheet with a given method of action. Authorises
  * the client before taking action
  * @param {function} callback The callback to call a method of action
  */
+
 function accessSpreadsheet(callback) {
     // Load client secrets from a local file.
-    fs.readFile(GOOGLE_CREDS, (err, content) => {
+    fs.readFile(path.join(__dirname, GOOGLE_CREDS), (err, content) => {
     if (err) return console.log('Error loading client secret file:', err);
     // Authorize a client with credentials, then call the Google Sheets API.
     authorize(JSON.parse(content), callback);
@@ -36,7 +38,7 @@ function authorize(credentials, callback) {
       client_id, client_secret, redirect_uris[0]);
 
   // Check if we have previously stored a token.
-  fs.readFile(TOKEN_PATH, (err, token) => {
+  fs.readFile(path.join(__dirname, TOKEN_PATH), (err, token) => {
     if (err) return getNewToken(oAuth2Client, callback);
     oAuth2Client.setCredentials(JSON.parse(token));
     callback(oAuth2Client);
