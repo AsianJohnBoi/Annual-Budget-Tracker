@@ -11,8 +11,8 @@ const START_ROW = 5
 const END_ROW = 54
 
 const months = [
-    'jan', 'feb', 'mar', 'apr', 
-    'may', 'jun', 'jul', 'aug', 
+    'jan', 'feb', 'mar', 'apr',
+    'may', 'jun', 'jul', 'aug',
     'sep', 'oct', 'nov', 'dec'
 ]
 
@@ -22,53 +22,51 @@ const months = [
  * @see https://docs.google.com/spreadsheets/d/<id>/edit
  * @param {google.auth.OAuth2} auth The authenticated Google OAuth client.
  */
-function mapExpenseSheet(auth) {
-    const sheets = google.sheets({ version: 'v4', auth });
-    sheets.spreadsheets.values.get({
-        spreadsheetId: SHEET_ID,
-        range: `${EXPENSE_SHEET_NAME}!${START_COL}${START_ROW}:${END_COL}${END_ROW}`,
-    }, (err, res) => {
-        if (err) return console.log('The API returned an error: ' + err);
-        const rows = (res.data.values);
-        if (rows.length) {
+async function mapExpenseSheet(auth) {
+    return new Promise((resolve, reject) => {
+        const sheets = google.sheets({ version: 'v4', auth });
+        sheets.spreadsheets.values.get({
+            spreadsheetId: SHEET_ID,
+            range: `${EXPENSE_SHEET_NAME}!${START_COL}${START_ROW}:${END_COL}${END_ROW}`,
+        }, (err, res) => {
+            if (err) return reject('The API returned an error: ' + err);
+            const rows = (res.data.values);
+            if (rows.length) {
 
-            // set indexes to determine cell positions
-            var indexRow = START_ROW;
-            var indexCol = START_COL;
+                // set indexes to determine cell positions
+                var indexRow = START_ROW;
+                var indexCol = START_COL;
 
-            const categories = rows.map((row) => {
-                var res = {
-                    "name": "",
-                    "month": {}
-                }
-
-                // set category as the name
-                res.name = row[0];
-
-                // create object for each month and cell values
-                months.map(m => {
-                    res.month[m] = {
-                        "value": 0,
-                        "cell": {
-                            "col": `${indexCol = nextChar(indexCol)}`,
-                            "row": `${indexRow}`
-                        }
+                const categories = rows.map((row) => {
+                    var res = {
+                        "name": "",
+                        "month": {}
                     }
+
+                    // set category as the name
+                    res.name = row[0];
+
+                    // create object for each month and cell values
+                    months.map(m => {
+                        res.month[m] = {
+                            "value": 0,
+                            "cell": {
+                                "col": `${indexCol = nextChar(indexCol)}`,
+                                "row": `${indexRow}`
+                            }
+                        }
+                    })
+
+                    indexRow++; // increment row
+                    indexCol = START_COL; // reset column
+
+                    return res;
                 })
-
-                indexRow++; // increment row
-                indexCol = START_COL; // reset column
-
-                return res;
-
-            })
-            .filter(x => x.name !== 'Monthly totals:'&&
+                .filter(x => x.name !== 'Monthly totals:' &&
                             x.name !== undefined);
-                        
-            return categories;
-        } else {
-            console.log('No data found.');
-        }
+                resolve(categories);
+            }
+        });
     });
 }
 

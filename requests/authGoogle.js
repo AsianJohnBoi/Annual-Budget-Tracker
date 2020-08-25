@@ -37,7 +37,6 @@ async function authorize() {
     }
     else console.log('Error occured: ', err);
   }
-
 }
 
 /**
