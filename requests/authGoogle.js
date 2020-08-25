@@ -4,54 +4,48 @@ const { google } = require('googleapis');
 const path = require('path');
 
 // If modifying these scopes, delete token.json.
-const SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly'];
+const SCOPES = ['https://www.googleapis.com/auth/spreadsheets'];
 // The file token.json stores the user's access and refresh tokens, and is
 // created automatically when the authorization flow completes for the first
 // time.
 const TOKEN_PATH = '../credentials/token.json';
-const GOOGLE_CREDS = '../credentials/credentials.json';
+const gCredentials = require('../credentials/credentials.json');
 
-/**
- * Access the google spreadsheet with a given method of action. Authorises
- * the client before taking action
- * @param {function} callback The callback to call a method of action
- */
-
-function accessSpreadsheet(callback) {
-    // Load client secrets from a local file.
-    fs.readFile(path.join(__dirname, GOOGLE_CREDS), (err, content) => {
-    if (err) return console.log('Error loading client secret file:', err);
-    // Authorize a client with credentials, then call the Google Sheets API.
-    authorize(JSON.parse(content), callback);
-    });
-}
-
+const { client_secret, client_id, redirect_uris } = gCredentials.installed;
+const oAuth2Client = new google.auth.OAuth2(
+  client_id, client_secret, redirect_uris[0]);
 /**
  * Create an OAuth2 client with the given credentials, and then execute the
  * given callback function.
- * @param {Object} credentials The authorization client credentials.
- * @param {function} callback The callback to call with the authorized client.
  */
-function authorize(credentials, callback) {
-  const {client_secret, client_id, redirect_uris} = credentials.installed;
-  const oAuth2Client = new google.auth.OAuth2(
-      client_id, client_secret, redirect_uris[0]);
+async function authorize() {
+  try {
+    // Check if token exists
+    const token = require(TOKEN_PATH);
+    oAuth2Client.setCredentials(token);
 
-  // Check if we have previously stored a token.
-  fs.readFile(path.join(__dirname, TOKEN_PATH), (err, token) => {
-    if (err) return getNewToken(oAuth2Client, callback);
-    oAuth2Client.setCredentials(JSON.parse(token));
-    callback(oAuth2Client);
-  });
+    // Obtain new access token if it is about to expire
+    oAuth2Client.on('tokens', (tokens) => {
+      if (tokens.refresh_token) oAuth2Client.setCredentials(tokens); // store the new tokens
+    });
+
+    return oAuth2Client;
+  } catch (err) {
+    if (err.code === 'MODULE_NOT_FOUND' && err.message.includes("token.json")) {
+      console.log("<WARNING--- Token does not exists. Generating a new token --->");
+      await getNewToken(oAuth2Client);
+    }
+    else console.log('Error occured: ', err);
+  }
+
 }
 
 /**
  * Get and store new token after prompting for user authorization, and then
  * execute the given callback with the authorized OAuth2 client.
  * @param {google.auth.OAuth2} oAuth2Client The OAuth2 client to get token for.
- * @param {getEventsCallback} callback The callback for the authorized client.
  */
-function getNewToken(oAuth2Client, callback) {
+async function getNewToken(oAuth2Client) {
   const authUrl = oAuth2Client.generateAuthUrl({
     access_type: 'offline',
     scope: SCOPES,
@@ -67,15 +61,15 @@ function getNewToken(oAuth2Client, callback) {
       if (err) return console.error('Error while trying to retrieve access token', err);
       oAuth2Client.setCredentials(token);
       // Store the token to disk for later program executions
-      fs.writeFile(TOKEN_PATH, JSON.stringify(token), (err) => {
+      fs.writeFile(path.join(__dirname, TOKEN_PATH), JSON.stringify(token), (err) => {
         if (err) return console.error(err);
-        console.log('Token stored to', TOKEN_PATH);
+        return console.log('Token stored to', TOKEN_PATH);
       });
-      callback(oAuth2Client);
     });
+    authorize();
   });
 }
 
 module.exports = {
-  accessSpreadsheet
+  authorize
 }
